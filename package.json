@@ -1,0 +1,19 @@
+{
+  "name": "foobarsongrequest-twitch",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "request": "^2.88.0",
+    "tmi.js": "^1.4.5"
+  },
+  "devDependencies": {
+    "standard": "^14.0.2"
+  }
+}
