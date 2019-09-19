@@ -196,17 +196,16 @@ async function main () {
           } else {
             songIndex = songPossible[Math.floor(Math.random() * songPossible.length)]
           }
-          await client.say(channel, `[@${displayName}] ${songPossible} songs found from query.`)
         } else {
           songIndex = songPossible[0]
         }
         if (songPossible.length > 0) {
           if (songsInCooldown[songIndex] === true) {
-            await client.say(channel, `[@${displayName}] The song ${songs[songIndex]} is currently on a cooldown.`)
-          } else if (usersInCooldown[username.toLowerCase()] === true) {
-            await client.say(channel, `[@${displayName}] You may only request a song every ${userCooldown} seconds.`)
+            await client.say(channel, `[@${displayName}] The song ${songs[songIndex]} is currently on a ${songCooldown / 60} minute cooldown.`)
+          } else if (usersInCooldown[username] === true) {
+            await client.say(channel, `[@${displayName}] You may only request a song every ${userCooldown / 60} minutes.`)
           } else {
-            if (username !== botChannel) {
+            if (username !== "testing") {
               songsInCooldown[songIndex] = true
               usersInCooldown[username] = true
               setTimeout(resetSongCooldown, songCooldown * 1000, songIndex)
