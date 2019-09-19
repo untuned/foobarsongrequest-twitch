@@ -32,8 +32,8 @@ let songs = []
 let currentSong = ['', '']
 
 // Cooldowns
-let songsInCooldown = []
-let usersInCooldown = []
+const songsInCooldown = []
+const usersInCooldown = []
 
 // functions
 function sleep (ms) {
@@ -66,19 +66,20 @@ function requestSong (param) {
         resolve(body)
       })
     } else {
-      reject()
+      const error = 'Parameter not found.'
+      reject(error)
     }
   })
 }
 
-function resetSongCooldown(song) {
+function resetSongCooldown (song) {
   console.log(`> Reset cooldown for ${songs[song]}`)
   songsInCooldown[song] = false
 }
 
-function resetUserCooldown(user) {
+function resetUserCooldown (user) {
   console.log(`> Reset cooldown for ${user}`)
-  usersInCooldown[username] = false
+  usersInCooldown[user] = false
 }
 
 async function main () {
@@ -108,7 +109,7 @@ async function main () {
 
     client.on('chat', async function (channel, user, message, self) {
       if (self) return
-      const username = user['username']
+      const username = user.username
       const displayName = user['display-name']
       message = message.toLowerCase()
 
@@ -147,7 +148,7 @@ async function main () {
       }
 
       if (command === 'song' || command === 'nowplaying' || command === 'np' || command === 'currentsong') {
-        let songBody = await getSong()
+        const songBody = await getSong()
         currentSong = [songBody.artist, songBody.title]
 
         if (songBody.isPlaying === '1') {
@@ -161,13 +162,13 @@ async function main () {
         }
       }
 
-      if(command === 'songrequest' || command === 'sr' || command === 'songreq') {
+      if (command === 'songrequest' || command === 'sr' || command === 'songreq') {
         for (let i = 0; i < args.length; i++) {
           args[i] = args[i].replace(/[.,/#!$%^&*;:{}=\-_`~()'"]/g, '').toLowerCase()
         }
 
         let songIndex = -1
-        let songPossible = []
+        const songPossible = []
         if (args.length === 0) {
           await client.say(channel, `[@${displayName}] Request songs with "!${command} name". Only songs from the Monstercat catalogue are available, excluding remixes and non-licensable tracks.`)
           return
@@ -184,7 +185,7 @@ async function main () {
         }
 
         if (songPossible.length > 1) {
-          let songPossibleNoRemix = []
+          const songPossibleNoRemix = []
           for (let i = 0; i < songPossible.length; i++) {
             if (songs[songPossible[i]].toLowerCase().indexOf('remix') === -1 && songs[songPossible[i]].toLowerCase().indexOf('acapella') === -1) {
               songPossibleNoRemix.push(songPossible[i])
@@ -208,15 +209,17 @@ async function main () {
             if (username !== botChannel) {
               songsInCooldown[songIndex] = true
               usersInCooldown[username] = true
-              setTimeout(resetSongCooldown,songCooldown * 1000, songIndex)
-              setTimeout(resetUserCooldown,userCooldown * 1000, username)
+              setTimeout(resetSongCooldown, songCooldown * 1000, songIndex)
+              setTimeout(resetUserCooldown, userCooldown * 1000, username)
             }
             await requestSong(songIndex)
             await client.say(channel, `[@${displayName}] The song "${songs[songIndex]}" has been added to the queue.`)
           }
         } else {
           await client.say(channel, `[@${displayName}] No songs found.`)
-          fs.appendFile('failedSongs.txt',  `\r\n [${username}] ${args}`, function (err) {});
+          fs.appendFile('failedSongs.txt', `\r\n [${username}] ${args}`, function (err) {
+            console.error(err)
+          })
         }
       }
     })
