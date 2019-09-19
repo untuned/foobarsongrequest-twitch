@@ -4,6 +4,8 @@ const request = require('request')
 const tmi = require('tmi.js')
 
 // Load config
+const p = require ('./package.json')
+const version = p.version
 const config = require('./config.json')
 const botUsername = config.username
 const botOauth = config.oauth
@@ -73,17 +75,20 @@ function requestSong (param) {
 }
 
 function resetSongCooldown (song) {
-  console.log(`> Reset cooldown for ${songs[song]}`)
+  console.log(`> Reset song repeat cooldown for ${songs[song]}`)
   songsInCooldown[song] = false
 }
 
 function resetUserCooldown (user) {
-  console.log(`> Reset cooldown for ${user}`)
+  console.log(`> Reset user request cooldown for ${user}`)
   usersInCooldown[user] = false
 }
 
 async function main () {
   try {
+    console.log('< Foobar2000 Song Requests for Twitch, created by untuned.')
+    console.log(`< Version: ${version}`)
+    await sleep(3000)
     console.log('> Loading playlist...')
     playlist = await getPlaylist()
     console.log('> Playlist loaded.')
@@ -94,10 +99,10 @@ async function main () {
     for (let i = 0; i < songs.length; i++) {
       if (songs[i].indexOf('">') !== -1) {
         songs[i] = songs[i].split('">')[1].replace(/['"]/g, '')
-        // console.log(songs[i])
       }
     }
-    console.log(`> Playlist parsed. ${songs.length} songs in the playlist.`)
+    console.log(`> Playlist parsed. ${songs.length} songs in the currently selected playlist.`)
+    console.log('> Wrong playlist? Select the correct one, and restart the bot.')
     await sleep(1000)
 
     console.log('> Connecting to Twitch IRC...')
@@ -118,17 +123,26 @@ async function main () {
       let month = String(date.getMonth() + 1)
       let day = String(date.getDate())
 
-      const hour = date.getHours()
-      const minute = date.getMinutes()
-      const seconds = date.getSeconds()
+      let hour = date.getHours()
+      let minute = date.getMinutes()
+      let seconds = date.getSeconds()
 
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
       if (month.length === 1) {
-        month = '0' + month
+        month = `0${month}`
       }
       if (day.length === 1) {
-        day = '0' + day
+        day = `0${day}`
+      }
+      if (hour.length === 1) {
+        hour = `0${hour}`
+      }
+      if (minute.length === 1) {
+        minute = `0${minute}`
+      }
+      if (seconds.length === 1) {
+        seconds = `0${seconds}`
       }
 
       fs.appendFile(`log_${day}-${month}-${year}.log`, `\r\n[${hour}:${minute}:${seconds} ${timezone}] ${username}: ${message}`, function (err) {
