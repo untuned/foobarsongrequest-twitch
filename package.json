@@ -2,7 +2,7 @@
   "name": "foobarsongrequest-twitch",
   "version": "1.0.0",
   "description": "",
-  "main": "bot.js",
+  "main": "index.js",
   "scripts": {
     "test": "standard"
   },

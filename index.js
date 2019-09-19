@@ -1,142 +1,3 @@
-/* // Load dependencies
-// const fs = require('fs')
-const request = require('request')
-const tmi = require('tmi.js')
-
-// Set static variables
-const config = require('./config.json')
-const botUsername = config.username
-const botOauth = config.oauth
-const botChannel = config.channel
-const prefix = config.prefix
-
-// TMI
-const options = {
-  connection: {
-    reconnect: true,
-    secure: true
-  },
-  identity: {
-    username: botUsername,
-    password: botOauth
-  },
-  channels: [botChannel]
-}
-const client = tmi.client(options)
-
-// const songCooldown = config.songCooldown
-// const userCooldown = config.userCooldown
-
-let foobarPlaylist
-let songs = []
-let currentSong = ['', '']; let previousSong = ['', '']
-
-console.log('> Loading playlist...')
-request({
-  url: 'http://127.0.0.1:8888/playlistviewer/?param3=playlist.json',
-  json: true
-}, function (error, response, body) {
-  console.log(`error: ${error} response: ${response} body: ${body}`)
-  if (!error && response.statusCode === 200) {
-    foobarPlaylist = body
-  } else {
-    console.error('> Unable to load playlist.')
-    process.exit(1)
-  }
-})
-console.log('> Playlist loaded.')
-
-console.log('> Parsing playlist...')
-songs = songs.concat(foobarPlaylist.split('</br>'))
-for (let i = 0; i < songs.length; i++) {
-  if (songs[i].indexOf('">') !== -1) {
-    songs[i] = songs[i].split('">')[1].replace(/['"]/g, '')
-    console.log(songs[i])
-  }
-}
-console.log('> Playlist parsed.')
-
-console.log('> Connecting to Twitch...')
-client.connect()
-  .then((data) => {
-    console.log(`> Connected.`)
-  }).catch((err) => {
-  console.error(err)
-})
-
-// Get current song
-function getCurrentSong () {
-  request({
-    url: 'http://127.0.0.1:8888/playlistviewer/?param3=nowPlaying.json',
-    json: true
-  }, function (err, response, body) {
-    if (!err && response.statusCode === 200) {
-      const pCurrentSong = currentSong
-      currentSong = [body.artist, body.title]
-
-      if (currentSong[0] === '' && currentSong[1] === '') return
-      if (pCurrentSong[0] !== currentSong[0] || pCurrentSong[1] !== currentSong[1]) {
-        previousSong = currentSong
-        if (currentSong[0] !== '?') {
-          console.log('> New song: ' + currentSong[0] + ' - "' + currentSong[1] + '"')
-        } else {
-          console.log('> New song: "' + currentSong[1] + '"')
-        }
-      }
-    }
-  })
-  setTimeout(getCurrentSong, 10000)
-}
-
-getCurrentSong()
-
-client.on('chat', (channel, userState, message, self) => {
-  if (self) return
-  const username = userState.username
-
-  const args = message.slice(prefix.length).trim().split(/ +/g)
-  const command = args.shift().toLowerCase()
-
-  if (command === 'ping' && username === botChannel) {
-    client.say(channel, 'Pong!')
-      .catch((err) => {
-        console.error(err)
-      })
-  }
-
-  if (command === 'song' ||
-  command === 'currentsong' ||
-  command === 'nowplaying' ||
-  command === 'np') {
-    request({
-      url: 'http://127.0.0.1:8888/playlistviewer/?param3=nowPlaying.json',
-      json: true
-    }, function (error, response, body) {
-      if (!error && response.statusCode === 200) {
-        if (body.isPlaying === 1) {
-          if (currentSong[0] !== '?') {
-            client.say(channel, `[@${username}] Currently playing: ${currentSong[0]} - "${currentSong[1]}"`)
-              .catch((err) => {
-                console.error(err)
-              })
-          } else {
-            client.say(channel, `[@${username}] Currently playing: "${currentSong[1]}"`)
-              .catch((err) => {
-                console.error(err)
-              })
-          }
-        } else {
-          client.say(channel, `[@${username}] No song playing.`)
-            .catch((err) => {
-              console.error(err)
-            })
-        }
-      }
-    })
-  }
-})
-*/
-
 // Load dependencies
 const fs = require('fs')
 const request = require('request')
@@ -148,6 +9,8 @@ const botUsername = config.username
 const botOauth = config.oauth
 const botChannel = config.channel
 const prefix = config.prefix
+const userCooldown = config.userCooldown
+const songCooldown = config.songCooldown
 
 // TMI options
 const options = {
@@ -193,6 +56,29 @@ function getSong () {
       resolve(body)
     })
   })
+}
+
+function requestSong (param) {
+  return new Promise(function (resolve, reject) {
+    if (param) {
+      request(`http://127.0.0.1:8888/default/?cmd=QueueItems&param1=${param}`, { json: true }, function (error, response, body) {
+        if (error) return reject(error)
+        resolve(body)
+      })
+    } else {
+      reject()
+    }
+  })
+}
+
+function resetSongCooldown(song) {
+  console.log(`> Reset cooldown for ${songs[song]}`)
+  songsInCooldown[song] = false
+}
+
+function resetUserCooldown(user) {
+  console.log(`> Reset cooldown for ${user}`)
+  usersInCooldown[username] = false
 }
 
 async function main () {
@@ -314,7 +200,23 @@ async function main () {
           songIndex = songPossible[0]
         }
         if (songPossible.length > 0) {
-
+          if (songsInCooldown[songIndex] === true) {
+            await client.say(channel, `[@${displayName}] The song ${songs[songIndex]} is currently on a cooldown.`)
+          } else if (usersInCooldown[username.toLowerCase()] === true) {
+            await client.say(channel, `[@${displayName}] You may only request a song every ${userCooldown} seconds.`)
+          } else {
+            if (username !== botChannel) {
+              songsInCooldown[songIndex] = true
+              usersInCooldown[username] = true
+              setTimeout(resetSongCooldown,songCooldown * 1000, songIndex)
+              setTimeout(resetUserCooldown,userCooldown * 1000, username)
+            }
+            await requestSong(songIndex)
+            await client.say(channel, `[@${displayName}] The song "${songs[songIndex]}" has been added to the queue.`)
+          }
+        } else {
+          await client.say(channel, `[@${displayName}] No songs found.`)
+          fs.appendFile('failedSongs.txt',  `\r\n [${username}] ${args}`, function (err) {});
         }
       }
     })
