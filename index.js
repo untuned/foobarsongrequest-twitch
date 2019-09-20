@@ -219,12 +219,10 @@ async function main () {
           } else if (usersInCooldown[username] === true) {
             await client.say(channel, `[@${displayName}] You may only request a song every ${userCooldown / 60} minutes.`)
           } else {
-            if (username !== botChannel) {
-              songsInCooldown[songIndex] = true
-              usersInCooldown[username] = true
-              setTimeout(resetSongCooldown, songCooldown * 1000, songIndex)
-              setTimeout(resetUserCooldown, userCooldown * 1000, username)
-            }
+            songsInCooldown[songIndex] = true
+            usersInCooldown[username] = true
+            setTimeout(resetSongCooldown, songCooldown * 1000, songIndex)
+            setTimeout(resetUserCooldown, userCooldown * 1000, username)
             await requestSong(songIndex)
             await client.say(channel, `[@${displayName}] The song "${songs[songIndex]}" has been added to the queue.`)
           }

@@ -1,9 +1,8 @@
 {
   "username": "",
-  "oauth": "6",
+  "oauth": "",
   "channel": "",
   "prefix": "!",
   "songCooldown": "1800",
-  "userCooldown": "300",
-  "autoUpdate": "0"
+  "userCooldown": "300"
 }
